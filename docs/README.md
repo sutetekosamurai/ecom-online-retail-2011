@@ -11,28 +11,33 @@ This folder contains short documentation for the project and a link to the live 
 
 ### Python packages (pinned)
 `requirements.txt` is included:
+```
 pandas==2.2.2
 pyarrow==16.1.0
 numpy==1.26.4
-
-r
-
+```
 
 ### Setup
+
 ```powershell
 # Windows PowerShell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-bash
+```
 
+```bash
 # macOS / Linux
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-1) Project layout
-cpp
+```
 
+---
+
+## 1) Project layout
+
+```text
 analytics-lab/
 └─ projects/
    └─ ecom-online-retail-2011/
@@ -51,157 +56,135 @@ analytics-lab/
       │  │  └─ 03_EC_Core_Customer.twbx
       │  └─ img/                      # screenshots for README/Docs
       ├─ docs/
-      │  ├─ README.md   ← this file
+      │  ├─ README.md                 # this file
       │  └─ data_dictionary.md
       ├─ notebooks/
       ├─ scripts/
       │  └─ 01_build_transactions.py
       ├─ sql/
       └─ requirements.txt
-2) Quick start
-2.1 Setup
-Follow the Setup commands above for your OS.
+```
 
-2.2 Place raw data
-Put the raw CSV under data/raw/.
-Example file and columns: Online Retail.csv with
-InvoiceNo, InvoiceDate, CustomerID, Country, StockCode, Description, Quantity, UnitPrice.
+---
 
-2.3 Build processed files
-bash
+## 2) Quick start
 
+### 2.1 Place raw data
+Put the raw CSV under `data/raw/`.
+Example columns: `InvoiceNo, InvoiceDate, CustomerID, Country, StockCode, Description, Quantity, UnitPrice`.
+
+### 2.2 Build processed files
+```bash
 python scripts/01_build_transactions.py
-Outputs in data/processed/:
+```
 
-transactions.parquet — line items (order × product)
+Outputs in `data/processed/`:
+- `transactions.parquet` — line items (order × product)
+- `cohort_retention.csv` — active users by cohort/index
+- `rfm_features.csv` — per-customer R/F/M with scores
+- `ltv_customer_month.csv` — per-customer monthly cumulative LTV
+- `channel_month.csv` — monthly revenue/orders/customers by country
 
-cohort_retention.csv — active users by cohort/index
+### 2.3 View dashboards
+Open the packaged workbooks in Tableau (`.twbx` includes data):
+- `dashboards/tableau/01_Country_Trends.twbx`
+- `dashboards/tableau/02_EC_Core_Overview.twbx`
+- `dashboards/tableau/03_EC_Core_Customer.twbx`
 
-rfm_features.csv — per-customer R/F/M with scores
+---
 
-ltv_customer_month.csv — per-customer monthly cumulative LTV
+## 3) Data cleaning rules
+- Drop returns: `InvoiceNo` starts with "C"
+- Keep only `Quantity > 0` and `UnitPrice >= 0`
+- Drop missing `CustomerID`
+- Derived fields:  
+  `revenue = Quantity * UnitPrice`  
+  `order_date = DATE(InvoiceDate)`  
+  `order_month = month start of InvoiceDate`  
+  `customer_id = str(int(CustomerID))`, `country = str(Country)`
 
-channel_month.csv — monthly revenue/orders/customers by country (proxy for “channel”)
+---
 
-2.4 View dashboards
-Open the packaged workbooks in Tableau (.twbx includes data):
+## 4) Dashboards
 
-dashboards/tableau/01_Country_Trends.twbx
+**01. Country Trends — Customers**  
+- KPIs: Revenue / Orders / Customers / UK Share  
+- Left: total time series (absolute)  
+- Right: small multiples per country (independent axes)  
+- Parameters: `Metric`, **Top N Countries** *(used only here)*
 
-dashboards/tableau/02_EC_Core_Overview.twbx
+**02. Customer Analytics — Cohort · R×F · LTV**  
+- Cohort heatmap: Retention Rate (%) × Cohort Index  
+- R×F heatmap: Color = `log10(Avg Monetary £/customer)`, Label = `Customers (count)`  
+- LTV: Average (solid), Median (dashed), IQR (band)  
+- Action: Hover on R×F → highlight corresponding LTV  
+- Note: Don’t place “Top N Countries” here (keeps interactions stable)
 
-dashboards/tableau/03_EC_Core_Customer.twbx
+---
 
-3) Data cleaning rules
-Returns: drop rows where InvoiceNo starts with "C"
+## 5) Deliverables
 
-Numeric guardrails: keep Quantity > 0 and UnitPrice >= 0
-
-CustomerID: drop missing CustomerID
-
-Derived fields
-
-revenue = Quantity * UnitPrice
-
-order_date = DATE(InvoiceDate)
-
-order_month = month start of InvoiceDate
-
-customer_id = str(int(CustomerID)), country = str(Country)
-
-4) Dashboards
-01. Country Trends — Customers
-
-KPIs: Revenue / Orders / Customers / UK Share
-
-Left: total (absolute) time series
-
-Right: small multiples (per-country, independent axes)
-
-Parameters: Metric (switch measure) / Top N Countries (used only on this dashboard)
-
-02. Customer Analytics — Cohort · R×F · LTV
-
-Cohort heatmap: Retention Rate (%) × Cohort Index
-
-R×F heatmap: Color = log10(Avg Monetary £/customer), Label = Customers (count)
-
-LTV: Average (solid), Median (dashed), IQR (band)
-
-Action: Hover on R×F → highlight corresponding LTV
-
-Note: Do not place the “Top N Countries” filter here (keeps interactions stable).
-
-5) Deliverables
-Live dashboards (Tableau Public)
-Default tab: Country Trends
+### Live dashboards (Tableau Public)
+Default tab: Country Trends  
 https://public.tableau.com/app/profile/.54894359/viz/OnlineRetail2011CountryCustomerAnalytics/CountryTrendsCustomers
 
-Screenshots
-Images live in dashboards/img/ and are referenced from docs via relative paths.
+### Screenshots
+Images live in `dashboards/img/` and are referenced below:
 
-
+- ![Country Trends (PC)](../dashboards/img/country_trends_pc.png)
+- ![Customer Analytics (PC)](../dashboards/img/customer_analytics_pc.png)
 
 <details><summary>Mobile layout</summary>
 
+- ![Country Trends (Phone)](../dashboards/img/country_trends_phone.png)  
+- ![Customer Analytics (Phone)](../dashboards/img/customer_analytics_phone.png)
 
 </details>
-6) Metric definitions (excerpt)
-(See docs/data_dictionary.md for full definitions.)
 
-Revenue (£) = Σ(Quantity × UnitPrice)
+---
 
-Orders = COUNTD(InvoiceNo)
+## 6) Metric definitions (excerpt)
+(See `docs/data_dictionary.md` for full list.)
+- Revenue (£) = Σ(Quantity × UnitPrice)
+- Orders = COUNTD(InvoiceNo)
+- Customers = COUNTD(customer_id)
+- UK Share (%) = UK / total revenue over the selected period
+- Retention Rate = active_users / base_users
+- Avg/Median LTV (£) = aggregated from `ltv_customer_month`
+- IQR = 25th–75th percentile band
 
-Customers = COUNTD(customer_id)
+---
 
-UK Share (%) = UK revenue / total revenue over the selected period (independent of Top-N)
+## 7) Script
+- File: `scripts/01_build_transactions.py`  
+- Role: ingest raw → clean → generate aggregates  
+- Input: `data/raw/*.csv`  
+- Output: `data/processed/*.csv`, `*.parquet`
 
-Retention Rate = active_users / base_users
+---
 
-Avg/Median LTV (£) = aggregated from ltv_customer_month
+## 8) Troubleshooting
+- CSV not found → ensure a CSV exists under `data/raw/`
+- UnicodeDecodeError → keep `encoding="unicode_escape"` on read
+- Tableau path broken → if using live `.twb`, re-point to `data/processed/`
+- R×F → LTV not highlighting → empty cells are expected; also ensure **Recency Rank / Frequency Rank** are on LTV Detail
 
-IQR = 25th–75th percentile band
+---
 
-7) Script
-File: scripts/01_build_transactions.py
+## 9) Ops notes
+- Use leading numbers (`01_*`) to clarify run order
+- Keep `.venv/` out of Git; reproduce env via `requirements.txt`
+- Don’t commit data (`data/raw`, `data/processed` in `.gitignore`)
 
-Role: ingest raw → clean → generate aggregates
+---
 
-Input: data/raw/*.csv
+## 10) License & credits
+- Data source: https://archive.ics.uci.edu/dataset/352/online+retail  
+- License: **CC BY 4.0** (reuse permitted with attribution)  
+- Citation: Chen, D. (2015). *Online Retail* [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5BW33  
+**Note**: Raw data is **not re-distributed** in this repo. Please download from UCI and place under `data/raw/`.
 
-Output: data/processed/*.csv, *.parquet
+---
 
-8) Troubleshooting
-CSV not found: ensure a CSV exists under data/raw/; verify name/extension
-
-UnicodeDecodeError: keep encoding="unicode_escape" on read
-
-Tableau data path broken: if using live .twb, re-point to data/processed/
-
-R×F → LTV not highlighting: empty cells are expected; also ensure Recency Rank / Frequency Rank exist on LTV Detail
-
-9) Ops notes
-Use leading numbers (01_*) in filenames to make the run order obvious
-
-Keep .venv/ out of Git; reproduce env via requirements.txt
-
-As a rule, don’t commit data (ignore data/raw and data/processed)
-
-10) License & credits
-Data source: https://archive.ics.uci.edu/dataset/352/online+retail
-
-License: Creative Commons Attribution 4.0 International (CC BY 4.0)
-(Reuse permitted with attribution.)
-
-Citation: Chen, D. (2015). Online Retail [Dataset]. UCI Machine Learning Repository. https://doi.org/10.24432/C5BW33
-Note: Raw data is not re-distributed in this repo. Please download from UCI and place under data/raw/.
-
-Changelog
-2025-08-22: Initial release (preprocessing + 3 dashboards)
-
-pgsql
-
-
-Want me to also convert your `data_dictionary.md` to a full English version to match this?
-::contentReference[oaicite:0]{index=0}
+## Changelog
+- 2025-08-22: Initial release (preprocessing + 3 dashboards)

@@ -1,4 +1,6 @@
 # Online Retail 2011 — Project Docs
+**Purpose:** Build a reproducible Python → Tableau pipeline to explore country trends and customer value (cohort, R×F, LTV) from the UCI Online Retail 2011 dataset.  
+**At a glance:** Revenue is highly UK-centric and LTV trends upward; hovering the R×F heatmap pinpoints high-value segments. (The last month may be incomplete.)
 
 This folder contains short documentation for the project and a link to the live dashboards.
 
